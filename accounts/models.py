@@ -58,7 +58,8 @@ class ShortenURL(models.Model):
     user = models.ForeignKey(Accounts, on_delete=models.CASCADE, related_name='urls')
     original_url = models.TextField()
     shorten_url = models.TextField(unique=True)
-    qr_image = models.ImageField(upload_to="images/", null=True)
+    token = models.CharField(max_length=10)
+    qr_image = models.ImageField(upload_to="images/")
     visited_count = models.IntegerField(default=0)
 
     def __str__(self) -> str:

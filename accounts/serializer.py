@@ -1,6 +1,7 @@
 from django.forms import ValidationError
 from rest_framework import serializers
 from accounts.models import Accounts, ShortenURL
+from accounts.utils import generate_qr_code, generate_short_url
 
 
 symbols = "[()[\]{}|\\`~!@#$%^*_\-+=:;'\",<>./?]"
@@ -23,6 +24,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "email",
             "password",
             "confirm_password",
+            
         ]
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -38,7 +40,6 @@ class AccountSerializer(serializers.ModelSerializer):
         return data
 
     def validate(self, attrs):
-        print("CP-->", attrs.get("confirm_password", None))
         if attrs.get("password", None) != attrs.get("confirm_password", None):
             raise ValidationError("Passwords donot match")
         attrs.pop("confirm_password", None)
@@ -51,4 +52,23 @@ class AccountSerializer(serializers.ModelSerializer):
 class shortenUrlSerialzier(serializers.ModelSerializer):
     class Meta:
         model = ShortenURL
-        fields = '__all__'
+        fields = [
+            "id",
+            "original_url",
+            "shorten_url",
+            "token",
+            "qr_image"
+        ]
+
+    
+    def update(self, instance, validated_data):
+        new_url = validated_data.get("original_url")
+        token, short_url = generate_short_url()
+        qr_code_img = generate_qr_code(url=short_url)
+        if token and short_url and new_url and qr_code_img:
+            instance.original_url = new_url
+            instance.token = token
+            instance.shorten_url = short_url
+            instance.qr_image=qr_code_img
+            instance.save()
+        return instance

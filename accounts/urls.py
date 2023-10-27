@@ -6,8 +6,11 @@ from accounts.views import (
     ListURLView,
     DeleteURLView,
     UpdateURLView,
-    RedirectURLView
+    RedirectURLView,
+    LogoutView,
 )
+from rest_framework_simplejwt.views import TokenBlacklistView
+
 
 urlpatterns = [
     path("login", LoginView.as_view(), name="login"),
@@ -15,7 +18,7 @@ urlpatterns = [
     path("create-url", CreateURLView.as_view(), name="create-url"),
     path("list-url", ListURLView.as_view(), name="list-url"),
     path("delete-url/<int:pk>", DeleteURLView.as_view(), name="delete-url"),
-     path("update-url/<int:pk>", UpdateURLView.as_view(), name="update-url"),
-     path("str:shorturl>", RedirectURLView.as_view())
-
+    path("update-url/<int:pk>", UpdateURLView.as_view(), name="update-url"),
+    path("logout", TokenBlacklistView.as_view(), name="logout"),
+    path("<str:short_url>", RedirectURLView.as_view()),
 ]

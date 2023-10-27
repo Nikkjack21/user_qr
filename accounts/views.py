@@ -5,10 +5,11 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
-
+from rest_framework_simplejwt.views import TokenBlacklistView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from accounts.serializer import AccountSerializer, LoginSerializer, shortenUrlSerialzier
 from accounts.models import Accounts, ShortenURL
-from accounts.utils import generate_short_url
+from accounts.utils import generate_short_url, generate_qr_code
 
 
 class LoginView(APIView):
@@ -28,17 +29,15 @@ class LoginView(APIView):
                 return Response("User doesn't exist")
 
 
-# class LogoutView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         try:
-#             refresh_token = request.data.get("refresh")
-#             token = RefreshToken(refresh_token)
-#             token.blacklist()
-#             return Response(status=status.HTTP_205_RESET_CONTENT)
-#         except:
-#             return Response(status=status.HTTP_400_BAD_REQUEST)
+class LogoutView(TokenBlacklistView):
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class RegisterView(APIView):
@@ -58,10 +57,16 @@ class CreateURLView(APIView):
         original_url = request.data.get("url", None)
         if not original_url:
             return Response({"url": "Please provide an URL to be shortened"})
-        short_url = generate_short_url()
+        token, short_url = generate_short_url()
+        qr_code_img = generate_qr_code(url=short_url)
         instance = ShortenURL.objects.create(
-            user=request.user, original_url=original_url, shorten_url=short_url
+            user=request.user,
+            original_url=original_url,
+            shorten_url=short_url,
+            token=token,
+            qr_image=qr_code_img,
         )
+
         serializer = shortenUrlSerialzier(instance)
         if serializer:
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -73,7 +78,7 @@ class ListURLView(APIView):
 
     def get(self, request):
         urls = ShortenURL.objects.filter(user=request.user)
-        serialzier = shortenUrlSerialzier(urls, many=True)
+        serialzier = shortenUrlSerialzier(urls, many=True, context={"request": request})
         return Response(serialzier.data)
 
 
@@ -97,8 +102,9 @@ class UpdateURLView(APIView):
 
 
 class RedirectURLView(APIView):
-    def post(self, request, short_url):
-        url_instance = ShortenURL.objects.get(shorten_url=short_url)
+    def get(self, request, short_url):
+        print(short_url)
+        url_instance = ShortenURL.objects.get(token=short_url)
         if url_instance:
             count = url_instance.visited_count
             count += 1

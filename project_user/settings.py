@@ -27,7 +27,7 @@ SECRET_KEY = "django-insecure-9$acb56!2(p3hsr^d%ck#4)tk+aa30d8gv7bx&e8$q-$5t*0h=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.202.20']
 
 
 # Application definition
@@ -61,7 +61,6 @@ AUTH_USER_MODEL = "accounts.Accounts"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        # "rest_framework_simplejwt.token_blacklist",
     ]
 }
 
